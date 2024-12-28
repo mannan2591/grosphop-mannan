@@ -1,0 +1,266 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Quiz App</title>
+</head>
+<body>
+    <div id="loading-screen" class="screen">
+        <div class="loading-container">
+            <p class="loading-text" id="loading-text">Loading... 0%</p>
+        </div>
+    </div>
+
+    <div id="levels-screen" class="screen hidden">
+        <h1>Levels</h1>
+        <div class="levels-container">
+            <button class="level unlocked" onclick="startLevel(1)">Level 1</button>
+            <button class="level locked" id="level-2" disabled>Level 2</button>
+            <button class="level locked" id="level-3" disabled>Level 3</button>
+        </div>
+    </div>
+
+    <div id="question-screen" class="screen hidden">
+        <h2 id="question"></h2>
+        <div id="options"></div>
+        <button id="next-button" onclick="nextQuestion()" class="hidden">Next</button>
+    </div>
+
+    <div id="result-screen" class="screen hidden">
+        <h2 id="result-text"></h2>
+        <button onclick="returnToLevels()">Back to Levels</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html><style>body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+}
+
+.screen {
+    display: none;
+    text-align: center;
+    width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-text {
+    font-size: 24px;
+    margin-top: 20px;
+}
+
+#levels-screen, #question-screen, #result-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.levels-container {
+    display: flex;
+    gap: 20px;
+}
+
+.level {
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.level.unlocked {
+    background-color: #4caf50;
+    color: white;
+}
+
+.level.locked {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+#options button {
+    display: block;
+    margin: 10px 0;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #2196f3;
+    color: white;
+}
+
+#options button:hover {
+    background-color: #0b7dda;
+}
+
+#next-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4caf50;
+    color: white;
+    cursor: pointer;
+}</style><script>const questions = {
+    1: [
+        {
+            question: "Which animal gives birth to live young?",
+            options: ["Frog", "Cat", "Fish"],
+            answer: 1,
+        },
+        {
+            question: "What is the unit of force?",
+            options: ["Newton", "Joule", "Watt"],
+            answer: 0,
+        },
+        {
+            question: "Which phenomenon explains a rainbow?",
+            options: ["Reflection", "Refraction", "Diffraction"],
+            answer: 1,
+        },
+    ],
+    2: [
+        {
+            question: "What reduces friction between surfaces?",
+            options: ["Oil", "Sandpaper", "Water"],
+            answer: 0,
+        },
+        {
+            question: "What is the speed of light in vacuum?",
+            options: ["300,000 km/s", "150,000 km/s", "100,000 km/s"],
+            answer: 0,
+        },
+        {
+            question: "What force keeps the planets in orbit?",
+            options: ["Gravity", "Magnetism", "Friction"],
+            answer: 0,
+        },
+    ],
+    3: [
+        {
+            question: "Which crop is grown during the Kharif season?",
+            options: ["Wheat", "Rice", "Barley"],
+            answer: 1,
+        },
+        {
+            question: "Which process removes weeds from crops?",
+            options: ["Irrigation", "Weeding", "Harvesting"],
+            answer: 1,
+        },
+        {
+            question: "Which fertilizer is organic?",
+            options: ["Compost", "Urea", "Potassium nitrate"],
+            answer: 0,
+        },
+    ],
+};
+
+let currentLevel = 1;
+let currentQuestionIndex = 0;
+let score = 0;
+
+const loadingScreen = document.getElementById("loading-screen");
+const levelsScreen = document.getElementById("levels-screen");
+const questionScreen = document.getElementById("question-screen");
+const resultScreen = document.getElementById("result-screen");
+const questionText = document.getElementById("question");
+const optionsContainer = document.getElementById("options");
+const nextButton = document.getElementById("next-button");
+const resultText = document.getElementById("result-text");
+
+// Loading Screen Logic
+let loadingProgress = 0;
+const loadingInterval = setInterval(() => {
+    loadingProgress += 1;
+    document.getElementById("loading-text").textContent = `Loading... ${loadingProgress}%`;
+    if (loadingProgress >= 100) {
+        clearInterval(loadingInterval);
+        showScreen(levelsScreen);
+    }
+}, 50);
+
+// Show a specific screen
+function showScreen(screen) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.add("hidden"));
+    screen.classList.remove("hidden");
+}
+
+// Start a level
+function startLevel(level) {
+    currentLevel = level;
+    currentQuestionIndex = 0;
+    score = 0;
+    showScreen(questionScreen);
+    showQuestion();
+}
+
+// Show a question
+function showQuestion() {
+    const question = questions[currentLevel][currentQuestionIndex];
+    questionText.textContent = question.question;
+    optionsContainer.innerHTML = "";
+    question.options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.textContent = option;
+        button.onclick = () => checkAnswer(index);
+        optionsContainer.appendChild(button);
+    });
+    nextButton.classList.add("hidden");
+}
+
+// Check the answer
+function checkAnswer(selected) {
+    const question = questions[currentLevel][currentQuestionIndex];
+    if (selected === question.answer) {
+        score += 1;
+    }
+    nextButton.classList.remove("hidden");
+}
+
+// Go to the next question or show the result
+function nextQuestion() {
+    currentQuestionIndex += 1;
+    if (currentQuestionIndex < questions[currentLevel].length) {
+        showQuestion();
+    } else {
+        showResult();
+    }
+}
+
+// Show the result screen
+function showResult() {
+    resultText.textContent = `You scored ${score} / ${questions[currentLevel].length}`;
+    if (score === questions[currentLevel].length && currentLevel < 3) {
+        document.getElementById(`level-${currentLevel + 1}`).disabled = false;
+        document.getElementById(`level-${currentLevel + 1}`).classList.remove("locked");
+        document.getElementById(`level-${currentLevel + 1}`).classList.add("unlocked");
+    }
+    showScreen(resultScreen);
+}
+
+// Return to levels screen
+function returnToLevels() {
+    showScreen(levelsScreen);
+}</script>
